@@ -2,6 +2,7 @@
 // Conexión a la base de datos
 $conexion = new mysqli("localhost", "root", "", "comercializadora");
 
+
 // Verifica conexión
 if ($conexion->connect_error) {
     die("Conexión fallida: " . $conexion->connect_error);
@@ -10,7 +11,6 @@ if ($conexion->connect_error) {
 // Si se envió el formulario, guardar los datos
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = intval($_POST['id']);
-
     $nombre = $conexion->real_escape_string($_POST['nombre']);
     $descripcion = $conexion->real_escape_string($_POST['descripcion']);
     $cant = intval($_POST['cant_disponible']);
@@ -27,7 +27,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$conexion->query($sql)) {
         die("Error al guardar: " . $conexion->error);
     }
-
 }
-
-?>
