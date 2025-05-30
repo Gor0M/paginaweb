@@ -1,4 +1,26 @@
 <?php
+session_start();
+
+if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true) {
+} else {
+  echo "Inicia Sesion para acceder a este contenido.<br>";
+  echo "<br><a href='login.html'>Login</a>";
+  echo "<br><br><a href='index.html'>Registrarme</a>";
+  header('Location: login.html'); //redirige a la página de login si el usuario quiere ingresar sin iniciar sesion
+
+  exit;
+}
+
+$now = time();
+
+if ($now > $_SESSION['expire']) {
+  session_destroy();
+  header('Location: login.html'); //redirige a la página de login, modifica la url a tu conveniencia
+  echo "Tu sesion ha expirado,
+<a href='login.html'>Inicia Sesion</a>";
+  exit;
+}
+
 $conexion = new mysqli("localhost", "root", "", "Comercializadora");
 
 if ($conexion->connect_error) {
@@ -7,6 +29,7 @@ if ($conexion->connect_error) {
 
 $id = $nombre = $descripcion = $cant = "";
 $modo_edicion = false;
+$error = "";
 
 // 🗑️ Si se solicitó eliminar
 if (isset($_GET['eliminar'])) {
@@ -37,21 +60,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cant = intval($_POST['cant_disponible']);
 
     if (isset($_POST['guardar'])) {
-        // Insertar o actualizar
-        $sql = "INSERT INTO productos (id, nombre, descripcion, cant_disponible)
-                VALUES ($id, '$nombre', '$descripcion', $cant)
-                ON DUPLICATE KEY UPDATE
-                    nombre = VALUES(nombre),
-                    descripcion = VALUES(descripcion),
-                    cant_disponible = VALUES(cant_disponible)";
-
-        if (!$conexion->query($sql)) {
-            echo "Error al guardar: " . $conexion->error;
+        if (!$modo_edicion) {
+            // Verificar si el ID ya existe
+            $verificar = $conexion->query("SELECT id FROM productos WHERE id = $id");
+            if ($verificar && $verificar->num_rows > 0) {
+                $error = "Error: Este ID ya está registrado.";
+            } else {
+                $sql = "INSERT INTO productos (id, nombre, descripcion, cant_disponible)
+                        VALUES ($id, '$nombre', '$descripcion', $cant)";
+                if (!$conexion->query($sql)) {
+                    $error = "Error al guardar: " . $conexion->error;
+                } else {
+                    header("Location: ProductosEdit.php");
+                    exit();
+                }
+            }
+        } else {
+            // Modo edición: actualizar
+            $sql = "UPDATE productos SET 
+                        nombre = '$nombre',
+                        descripcion = '$descripcion',
+                        cant_disponible = $cant
+                    WHERE id = $id";
+            if (!$conexion->query($sql)) {
+                $error = "Error al actualizar: " . $conexion->error;
+            } else {
+                header("Location: ProductosEdit.php");
+                exit();
+            }
         }
     }
-
-    header("Location: ProductosEdit.php");
-    exit();
 }
 
 $resultado = $conexion->query("SELECT * FROM productos");
@@ -115,12 +153,23 @@ $resultado = $conexion->query("SELECT * FROM productos");
             color: white;
             padding: 5px 10px;
         }
+
+        .error {
+            color: red;
+            text-align: center;
+            margin-top: 10px;
+            font-weight: bold;
+        }
     </style>
 </head>
 
 <body>
 
     <h2 style="text-align:center;"><?= $modo_edicion ? 'Editar Producto' : 'Agregar Producto' ?></h2>
+
+    <?php if ($error) : ?>
+        <p class="error"><?= htmlspecialchars($error) ?></p>
+    <?php endif; ?>
 
     <form method="POST">
         <label>ID:</label>
@@ -163,6 +212,7 @@ $resultado = $conexion->query("SELECT * FROM productos");
             </tr>
         <?php } ?>
     </table>
+    <a href=logout.php><button type="button" class="btn btn-success"> Cerrar Sesion</button></a>
 
 </body>
 
