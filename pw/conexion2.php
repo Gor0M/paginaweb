@@ -2,6 +2,6 @@
 $host_db = "localhost";
 $user_db = "root";
 $pass_db = "";
-$db_name = "basedatosmaster";
+$db_name = "comercializadora";
 $tbl_name = "usuarios";
 ?>
